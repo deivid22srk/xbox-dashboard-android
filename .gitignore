@@ -1,0 +1,15 @@
+# Godot
+.godot/
+*.tmp
+
+# Export
+build/
+*.apk
+android/build/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# QA local
+qa/
