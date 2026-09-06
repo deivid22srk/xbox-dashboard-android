@@ -1,16 +1,25 @@
 #!/usr/bin/env python3
 """Prepara o gradle build template do Godot para o export Android do SeriesDash.
 
-1. Extrai android_source.zip dos export templates -> android/build/
-2. Injeta no manifest: permissoes INTERNET + REQUEST_INSTALL_PACKAGES e o
-   FileProvider (necessario para o plugin InstallBridge acionar o instalador).
-3. Copia tools/file_paths.xml -> android/build/res/xml/
-4. Garante a dependencia androidx.core no build.gradle do template.
+1. Extrai android_source.zip dos export templates -> android/build/ (com
+   .build_version e .gdignore, como o "Install Android Build Template" do editor).
+2. Injeta no manifest as permissoes INTERNET + REQUEST_INSTALL_PACKAGES.
+3. Copia o fonte InstallBridge.java para dentro do modulo app do template
+   (compilado junto do app pelo gradle — sem gdap/AAR externo).
+4. Registra o InstallBridge via meta-data org.godotengine.plugin.v2.*
+   no <application> (GodotPluginRegistry descobre por reflexao em runtime).
+5. Garante a dependencia androidx.core no build.gradle do template (para o
+   FileProvider importado pelo InstallBridge.java; o provider em si JA EXISTE
+   no godot-lib com autoridade ${applicationId}.fileprovider e files-path
+   cobrindo o user:// — nao adicionamos outro).
+6. Escreve local.properties com sdk.dir quando ANDROID_HOME esta definido.
+7. GODOT_GRADLE_XMX opcional: reduz o heap do daemon gradle em maquinas pequenas.
 
 Idempotente: pode rodar varias vezes. Requer export templates 4.4.1 instalados.
 """
 import os
 import re
+import shutil
 import sys
 import zipfile
 
@@ -21,6 +30,8 @@ TEMPLATES_DIR = os.environ.get(
 )
 PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD_DIR = os.path.join(PROJECT, "android", "build")
+PLUGIN_PKG = "org/godotengine/plugin/installbridge"
+PLUGIN_CLASS = "org.godotengine.plugin.installbridge.InstallBridge"
 
 
 def fail(msg: str) -> None:
@@ -33,10 +44,28 @@ def main() -> None:
     if not os.path.exists(src):
         fail(f"android_source.zip nao encontrado em {src}. Instale os export templates 4.4.1.")
 
+    # ------------------------------------------------------------------
+    # 1. Extrai o template gradle
+    # ------------------------------------------------------------------
     os.makedirs(BUILD_DIR, exist_ok=True)
     with zipfile.ZipFile(src) as z:
         z.extractall(BUILD_DIR)
     print(f"[setup_android_template] template extraido em {BUILD_DIR}")
+
+    # ------------------------------------------------------------------
+    # 1b. .build_version (no PAI de android/build) e .gdignore (dentro de
+    #     android/build) — equivalente exato ao "Install Android Build
+    #     Template" do editor: versiona o template e impede o scan/import.
+    # ------------------------------------------------------------------
+    parent_dir = os.path.dirname(BUILD_DIR)
+    with open(os.path.join(parent_dir, ".build_version"), "w", encoding="utf-8") as f:
+        f.write(VERSION_DIR + "\n")
+    with open(os.path.join(BUILD_DIR, ".gdignore"), "w", encoding="utf-8") as f:
+        f.write("\n")
+    gradlew = os.path.join(BUILD_DIR, "gradlew")
+    if os.path.exists(gradlew):
+        os.chmod(gradlew, 0o755)  # extractall() nao preserva o bit de execucao do zip
+    print(f"[setup_android_template] android/.build_version={VERSION_DIR} e android/build/.gdignore criados")
 
     manifest_path = os.path.join(BUILD_DIR, "AndroidManifest.xml")
     if not os.path.exists(manifest_path):
@@ -44,13 +73,15 @@ def main() -> None:
     with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = f.read()
 
+    # ------------------------------------------------------------------
+    # 2. Permissoes
+    # ------------------------------------------------------------------
     perms = ""
     if "android.permission.INTERNET" not in manifest:
-        perms += '<uses-permission android:name="android.permission.INTERNET"/>\n'
+        perms += '<uses-permission android:name="android.permission.INTERNET"/>\n    '
     if "android.permission.REQUEST_INSTALL_PACKAGES" not in manifest:
-        perms += '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>\n'
+        perms += '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>\n    '
     if perms:
-        # insere logo apos a tag <manifest ...> de abertura
         m = re.search(r"<manifest[^>]*>", manifest)
         if not m:
             fail("tag <manifest> nao encontrada")
@@ -58,40 +89,54 @@ def main() -> None:
         manifest = manifest[:end] + "\n    " + perms + manifest[end:]
         print("[setup_android_template] permissoes inseridas")
 
-    if "androidx.core.content.FileProvider" not in manifest:
-        provider = (
-            '<provider\n'
-            '            android:name="androidx.core.content.FileProvider"\n'
-            '            android:authorities="${applicationId}.fileprovider"\n'
-            '            android:exported="false"\n'
-            '            android:grantUriPermissions="true">\n'
-            '            <meta-data\n'
-            '                android:name="android.support.FILE_PROVIDER_PATHS"\n'
-            '                android:resource="@xml/file_paths"/>\n'
-            '        </provider>\n\n    '
+    # ------------------------------------------------------------------
+    # 3. FileProvider: JA EXISTE no godot-lib (autoridade ${applicationId}.
+    #    fileprovider + @xml/godot_provider_paths com files-path "/").
+    #    Adicionar outro conflita no manifest merger — nada a fazer aqui.
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # 4. Meta-data de registro do plugin (dentro de <application>)
+    # ------------------------------------------------------------------
+    if "org.godotengine.plugin.v2.InstallBridge" not in manifest:
+        meta = (
+            '<meta-data\n'
+            '            android:name="org.godotengine.plugin.v2.InstallBridge"\n'
+            f'            android:value="{PLUGIN_CLASS}"/>\n\n    '
         )
-        if "</application>" not in manifest:
-            fail("tag </application> nao encontrada")
-        manifest = manifest.replace("</application>", provider + "</application>", 1)
-        print("[setup_android_template] FileProvider inserido")
+        m = re.search(r"<application[^>]*>", manifest)
+        if not m:
+            fail("tag <application> nao encontrada")
+        end = m.end()
+        manifest = manifest[:end] + "\n    " + meta + manifest[end:]
+        print("[setup_android_template] meta-data v2 do InstallBridge inserido")
 
     with open(manifest_path, "w", encoding="utf-8") as f:
         f.write(manifest)
 
-    # file_paths.xml
-    xml_dir = os.path.join(BUILD_DIR, "res", "xml")
-    os.makedirs(xml_dir, exist_ok=True)
-    with open(os.path.join(PROJECT, "tools", "file_paths.xml"), "r", encoding="utf-8") as f:
-        file_paths = f.read()
-    with open(os.path.join(xml_dir, "file_paths.xml"), "w", encoding="utf-8") as f:
-        f.write(file_paths)
-    print("[setup_android_template] res/xml/file_paths.xml garantido")
+    # ------------------------------------------------------------------
+    # 6. InstallBridge.java -> modulo raiz do template (java.srcDirs = ['src'])
+    # ------------------------------------------------------------------
+    src_java = os.path.join(
+        PROJECT, "android", "plugins", "InstallBridge", "src", PLUGIN_PKG, "InstallBridge.java"
+    )
+    dst_java = os.path.join(BUILD_DIR, "src", PLUGIN_PKG, "InstallBridge.java")
+    if not os.path.exists(src_java):
+        fail(f"fonte do InstallBridge ausente: {src_java}")
+    os.makedirs(os.path.dirname(dst_java), exist_ok=True)
+    shutil.copyfile(src_java, dst_java)
+    print(f"[setup_android_template] InstallBridge.java copiado para {dst_java}")
 
-    # androidx.core no build.gradle
+    # ------------------------------------------------------------------
+    # 5. androidx.core no build.gradle (FileProvider import do InstallBridge;
+    #    o provider vem pronto do godot-lib)
+    # ------------------------------------------------------------------
     gradle_path = os.path.join(BUILD_DIR, "build.gradle")
+    if not os.path.exists(gradle_path):
+        fail(f"build.gradle do template ausente: {gradle_path}")
     with open(gradle_path, "r", encoding="utf-8") as f:
         gradle = f.read()
-    if "androidx.core:core" not in gradle:
+    if not re.search(r"androidx\.core:core(?!-)", gradle):
         if re.search(r"dependencies\s*\{", gradle):
             gradle = re.sub(
                 r"(dependencies\s*\{)",
@@ -106,6 +151,35 @@ def main() -> None:
         print("[setup_android_template] androidx.core adicionado ao build.gradle")
     else:
         print("[setup_android_template] androidx.core ja presente")
+
+    # ------------------------------------------------------------------
+    # 7b. Ajuste de memoria do gradle para maquinas pequenas (opcional).
+    #     O template fixa -Xmx4536m; em maquinas com pouca RAM isso trava
+    #     o daemon. GODOT_GRADLE_XMX=1536m reduz o heap e roda o Kotlin
+    #     in-process. CI (runners grandes) pode omitir.
+    # ------------------------------------------------------------------
+    gradle_props_path = os.path.join(BUILD_DIR, "gradle.properties")
+    with open(gradle_props_path, "r", encoding="utf-8") as f:
+        gprops = f.read()
+    gradle_xmx = os.environ.get("GODOT_GRADLE_XMX")
+    if gradle_xmx and "org.gradle.jvmargs=" in gprops:
+        gprops = re.sub(r"org\.gradle\.jvmargs=-Xmx\d+[mMgG]", f"org.gradle.jvmargs=-Xmx{gradle_xmx}", gprops)
+        if "kotlin.compiler.execution.strategy" not in gprops:
+            gprops += "\nkotlin.compiler.execution.strategy=in-process\norg.gradle.workers.max=2\n"
+        with open(gradle_props_path, "w", encoding="utf-8") as f:
+            f.write(gprops)
+        print(f"[setup_android_template] gradle jvmargs ajustado para -Xmx{gradle_xmx}")
+
+    # ------------------------------------------------------------------
+    # 8. local.properties com sdk.dir (se ANDROID_HOME definido)
+    # ------------------------------------------------------------------
+    sdk_home = os.environ.get("GODOT_SDK_HOME") or os.environ.get("ANDROID_HOME")
+    if sdk_home:
+        with open(os.path.join(BUILD_DIR, "local.properties"), "w", encoding="utf-8") as f:
+            f.write(f"sdk.dir={sdk_home}\n")
+        print(f"[setup_android_template] local.properties -> sdk.dir={sdk_home}")
+    else:
+        print("[setup_android_template] ANDROID_HOME nao definido; local.properties omitido")
 
     print("[setup_android_template] OK")
 

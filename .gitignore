@@ -6,6 +6,7 @@
 build/
 *.apk
 android/build/
+android/.build_version
 
 # Sistema
 .DS_Store

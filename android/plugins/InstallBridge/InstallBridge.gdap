@@ -1,5 +1,0 @@
-[config]
-
-name="InstallBridge"
-entry="org.godotengine.plugin.installbridge.InstallBridge"
-type="plugin"

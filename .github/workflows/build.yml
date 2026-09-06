@@ -12,7 +12,8 @@ env:
 
 jobs:
   build:
-    name: Exportar APK (Godot ${{ env.GODOT_VERSION }})
+    # NOTA: o contexto env NAO esta disponivel no name de job — valor fixo.
+    name: Exportar APK (Godot 4.4.1)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -47,7 +48,7 @@ jobs:
           mv /tmp/tpl_out/templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
           ls ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable | head -5
 
-      - name: Preparar template gradle + patches (manifest/provider/file_paths)
+      - name: Preparar template gradle + InstallBridge (manifest/provider/fonte Java)
         run: python3 tools/setup_android_template.py
 
       - name: Gerar keystore de debug
@@ -64,27 +65,30 @@ jobs:
         run: |
           mkdir -p ~/.config/godot
           JAVA_RESOLVED="${JAVA_HOME:-$(dirname $(dirname $(readlink -f $(which javac))))}"
-          cat > ~/.config/godot/editor_settings-4.tres <<EOF
-          config_version=5
+          # ATENCAO: o arquivo correto no Godot 4.4 e editor_settings-<MAJOR.MINOR>.tres
+          # e o formato e gd_resource (chaves flat sob [resource]), NAO ConfigFile.
+          cat > ~/.config/godot/editor_settings-4.4.tres <<EOF
+          [gd_resource type="EditorSettings" format=3]
 
-          [export]
-
-          android/android_sdk_path="${ANDROID_HOME}"
-          android/java_sdk_path="${JAVA_RESOLVED}"
-          android/debug_keystore="$HOME/.android/debug.keystore"
-          android/debug_keystore_user="androiddebugkey"
-          android/debug_keystore_pass="android"
+          [resource]
+          export/android/android_sdk_path = "${ANDROID_HOME}"
+          export/android/java_sdk_path = "${JAVA_RESOLVED}"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          filesystem/import/blender/enabled = false
+          filesystem/import/fbx2gltf/enabled = false
           EOF
-          cat ~/.config/godot/editor_settings-4.tres
+          cat ~/.config/godot/editor_settings-4.4.tres
 
       - name: Importar recursos
-        run: godot --headless --import . 2>&1 | tail -20
+        run: godot --headless --path . --import < /dev/null 2>&1 | tail -20
 
       - name: Exportar APK (debug-assinado via gradle)
         run: |
           set -e
-          godot --headless --export-debug "Android" build/SeriesDash.apk 2>&1 | tee export_log.txt | tail -40
-          test -f build/SeriesDash.apk || { echo "::error::APK nao foi gerado"; grep -i -A5 "error\|ERRO" export_log.txt | head -60; exit 1; }
+          godot --headless --path . --export-debug "Android" build/SeriesDash.apk < /dev/null 2>&1 | tee export_log.txt | tail -40
+          test -f build/SeriesDash.apk || { echo "::error::APK nao foi gerado"; grep -i -B2 -A5 "error\|ERRO" export_log.txt | head -80; exit 1; }
 
       - name: Verificar APK
         run: |

@@ -40,6 +40,14 @@ explicitamente permitido como cascao, e não contém nenhuma UI nem lógica de a
 
 Toda a **UI, animações, navegação, catálogo, downloads, estados e regras** vivem em GDScript.
 
+**Integração com o build**: o Godot 4.4 não compila fontes Java declarados em `.gdap` (esse
+mecanismo exige AAR pré-compilado). Por isso o script `tools/setup_android_template.py`
+(no CI e no setup local) copia o `InstallBridge.java` para dentro do módulo `app` do
+template gradle (compilado junto do aplicativo) e o registra no manifest via
+`<meta-data android:name="org.godotengine.plugin.v2.InstallBridge" .../>` — o
+`GodotPluginRegistry` do Godot instancia a classe por reflexão em runtime, expondo-a
+como singleton `InstallBridge` para o GDScript. Sem AAR, sem gdap, sem passo extra.
+
 ---
 
 ## 2. Arquitetura
@@ -66,8 +74,8 @@ Toda a **UI, animações, navegação, catálogo, downloads, estados e regras** 
 │   ├── InstallBridge.gd       # ponte GDScript → plugin Android (no-op no desktop)
 │   └── GameState.gd / Qa.gd   # estado persistente + harness de screenshots (QA)
 ├── shaders/                   # ambient blur, acrylic, shimmer, cantos arredondados
-├── android/plugins/InstallBridge/  # casão mínimo (ver seção 1)
-├── tools/setup_android_template.py # prepara o gradle build template no CI (manifest/perm/provider)
+├── android/plugins/InstallBridge/  # fonte Java do casão (copiado p/ template gradle no build)
+├── tools/setup_android_template.py # prepara o template gradle (manifest/perm/provider/fonte Java/meta-data)
 └── .github/workflows/build.yml     # CI: exporta o APK e publica como artifact
 ```
 
