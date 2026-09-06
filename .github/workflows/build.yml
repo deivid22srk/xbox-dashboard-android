@@ -38,11 +38,11 @@ jobs:
         run: |
           set -e
           cd /tmp
-          curl -sL --retry 3 -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_${GODOT_VERSION}-stable_linux.x86_64.zip"
+          curl -fL --retry 3 -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
           unzip -o -q godot.zip
           sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           godot --version
-          curl -sL --retry 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_${GODOT_VERSION}-stable_export_templates.tpz"
+          curl -fL --retry 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
           mkdir -p ~/.local/share/godot/export_templates
           unzip -o -q templates.tpz -d /tmp/tpl_out
           mv /tmp/tpl_out/templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
