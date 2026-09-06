@@ -87,6 +87,7 @@ jobs:
       - name: Exportar APK (debug-assinado via gradle)
         run: |
           set -e
+          mkdir -p build
           godot --headless --path . --export-debug "Android" build/SeriesDash.apk < /dev/null 2>&1 | tee export_log.txt | tail -40
           test -f build/SeriesDash.apk || { echo "::error::APK nao foi gerado"; grep -i -B2 -A5 "error\|ERRO" export_log.txt | head -80; exit 1; }
 
