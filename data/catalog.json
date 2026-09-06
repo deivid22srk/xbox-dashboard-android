@@ -1,0 +1,138 @@
+{
+  "_comentario": "Catalogo da loja. Para adicionar um jogo: copie um bloco de 'games' e ajuste. source.type=github_release consulta /releases/latest do repo em runtime e encontra o asset .apk (asset_pattern filtra). coming_soon=true mostra 'Em breve' e desabilita download. package_name (opcional) permite checar se ja esta instalado.",
+  "store_name": "SeriesDash Store",
+  "hero_order": ["dk64-recomp", "crimson-protocol", "nebula-drift"],
+  "rows": {
+    "destaques": ["dk64-recomp", "crimson-protocol", "verde-profundo", "circuito-neon", "nebula-drift", "aurora-falling"],
+    "novidades": ["dk64-recomp", "ilha-perdida", "circuito-neon", "aurora-falling"],
+    "em_breve": ["crimson-protocol", "nebula-drift", "aurora-falling", "ilha-perdida"]
+  },
+  "home_rows": {
+    "recomendados": ["dk64-recomp", "circuito-neon", "verde-profundo", "aurora-falling"],
+    "novidades": ["dk64-recomp", "ilha-perdida", "nebula-drift", "circuito-neon"]
+  },
+  "games": [
+    {
+      "id": "dk64-recomp",
+      "title": "Donkey Kong 64: Recompiled",
+      "subtitle": "Port Android nativo (NDK)",
+      "developer": "deivid22srk · Rainchus · Rare (jogo original)",
+      "genre": ["Plataforma", "Aventura", "Recompilado"],
+      "size_estimate": "≈ 10 MB (APK)",
+      "description": "Port Android nativo do Donkey Kong 64: Recompiled, mantendo a stack original: N64ModernRuntime + RT64 (Vulkan) + RmlUi + SDL2. Renderizacao recompilada com alta fidelidade ao original de 1999.\n\nIMPORTANTE: este projeto nao distribui assets do jogo. Voce precisa fornecer a sua propria ROM original de Donkey Kong 64 (EUA, NTSC-U 1.0) no primeiro uso — o app valida o arquivo por hash e prepara tudo automaticamente.\n\nRequisitos: Android 8.0+, arm64-v8a, GPU com Vulkan 1.1+. Gamepad Bluetooth/USB recomendado; inclui gamepad virtual para touch.",
+      "package_name": "com.deivid22srk.dk64recomp",
+      "art": {
+        "cover": "res://assets/art/cover_dk64.webp",
+        "hero": "res://assets/art/hero_dk64.webp",
+        "screenshots": [
+          "res://assets/art/shot_dk64_1.webp",
+          "res://assets/art/shot_dk64_2.webp",
+          "res://assets/art/shot_dk64_3.webp"
+        ]
+      },
+      "source": {
+        "type": "github_release",
+        "repo": "deivid22srk/dk64-recomp-android",
+        "asset_pattern": ".apk",
+        "fallback": {
+          "version": "v1.0.3-android-r7",
+          "name": "dk64recomp-android-v1.0.3-android-r7.apk",
+          "size": 10488083,
+          "url": "https://github.com/deivid22srk/dk64-recomp-android/releases/download/v1.0.3-android-r7/dk64recomp-android-v1.0.3-android-r7.apk"
+        }
+      }
+    },
+    {
+      "id": "crimson-protocol",
+      "title": "Crimson Protocol",
+      "subtitle": "FPS tatico de infiltracao",
+      "developer": "Estudio Vertice (demo)",
+      "genre": ["FPS", "Tatico"],
+      "size_estimate": "≈ 48 GB",
+      "coming_soon": true,
+      "description": "Comande uma esquadrilha de operadores de elite dentro de um megacomplexo industrial tomado por uma IA hostil. Planejamento tatico, iluminacao dinamica e fisica de destruicao — um FPS de infiltracao construido para telas grandes e gamepad. (Item demonstrativo da loja.)",
+      "art": {
+        "cover": "res://assets/art/cover_crimson.webp",
+        "hero": "res://assets/art/hero_crimson.webp",
+        "screenshots": []
+      },
+      "source": { "type": "none" }
+    },
+    {
+      "id": "nebula-drift",
+      "title": "Nebula Drift",
+      "subtitle": "Corrida antigravidade espacial",
+      "developer": "Orbita Zero (demo)",
+      "genre": ["Corrida", "Ficcao cientifica"],
+      "size_estimate": "≈ 22 GB",
+      "coming_soon": true,
+      "description": "Naves antigravidade a 900 km/h por canions de nebulosas. Derrapagem vetorial, boost gravitacional e pistas geradas proceduralmente em tempo real. (Item demonstrativo da loja.)",
+      "art": {
+        "cover": "res://assets/art/cover_nebula.webp",
+        "hero": "res://assets/art/hero_nebula.webp",
+        "screenshots": []
+      },
+      "source": { "type": "none" }
+    },
+    {
+      "id": "verde-profundo",
+      "title": "Verde Profundo",
+      "subtitle": "Exploracao de selva bioluminescente",
+      "developer": "Canopy Interactive (demo)",
+      "genre": ["Aventura", "Exploracao"],
+      "size_estimate": "≈ 16 GB",
+      "coming_soon": true,
+      "description": "Uma exploradora, uma lanterna e uma selva milenar que responde a luz. Descubra especies bioluminescentes, decifre ruinas e sobreviva a noite. (Item demonstrativo da loja.)",
+      "art": {
+        "cover": "res://assets/art/cover_verde.webp",
+        "screenshots": []
+      },
+      "source": { "type": "none" }
+    },
+    {
+      "id": "circuito-neon",
+      "title": "Circuito Neon",
+      "subtitle": "Arcade de corrida synthwave",
+      "developer": "Retrogrado (demo)",
+      "genre": ["Corrida", "Arcade"],
+      "size_estimate": "≈ 3,4 GB",
+      "coming_soon": true,
+      "description": "Corridas noturnas em grades de neon: derrape, carregue o turbo e apague a concorrencia ao ritmo do synthwave. (Item demonstrativo da loja.)",
+      "art": {
+        "cover": "res://assets/art/cover_circuito.webp",
+        "screenshots": []
+      },
+      "source": { "type": "none" }
+    },
+    {
+      "id": "aurora-falling",
+      "title": "Aurora Falling",
+      "subtitle": "Puzzle atmosferico de ilhas flutuantes",
+      "developer": "Studio Boreal (demo)",
+      "genre": ["Puzzle", "Relaxante"],
+      "size_estimate": "≈ 1,8 GB",
+      "coming_soon": true,
+      "description": "Conecte cristais flutuantes sob uma aurora polar e devolva a luz as ilhas. Um puzzle contemplativo com trilha sonora reativa. (Item demonstrativo da loja.)",
+      "art": {
+        "cover": "res://assets/art/cover_aurora.webp",
+        "screenshots": []
+      },
+      "source": { "type": "none" }
+    },
+    {
+      "id": "ilha-perdida",
+      "title": "Ilha Perdida",
+      "subtitle": "Sobrevivencia em ilha misteriosa",
+      "developer": "Mare Alta Games (demo)",
+      "genre": ["Sobrevivencia", "Mundo aberto"],
+      "size_estimate": "≈ 31 GB",
+      "coming_soon": true,
+      "description": "Naufrague numa ilha que nao consta em nenhum mapa. Colete, construa, explore cavernas e descubra por que o nevoeiro nunca se vai. (Item demonstrativo da loja.)",
+      "art": {
+        "cover": "res://assets/art/cover_ilha.webp",
+        "screenshots": []
+      },
+      "source": { "type": "none" }
+    }
+  ]
+}
